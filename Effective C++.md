@@ -274,9 +274,9 @@ public:
 
  char& operator[](size_t pos){
 
-return const_cast<char&>(
+	return const_cast<char&>(
 
-static_cast<const TextBlock&>(*this)
+	static_cast<const TextBlock&>(*this)
 
  [pos] 
 

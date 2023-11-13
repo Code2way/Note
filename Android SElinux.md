@@ -66,3 +66,33 @@ Security Enhanced Linux(SELinux) 为Linux 提供了一种增强的安全机制�
 - Object： 操作的目标对象，例如 文件（linux 中一切皆为文件）
 - Action： 对Object做的动作，例如 读取、写入或者执行等等
 - Context： Subject和Object都有属于自己的Context，也可以称作为Label。Context有几个部分组成，分别是SELinux User、SELinux Role、SELinux Type、SELinux Level，
+
+用户程序执行的系统调用（例如读取文件），都要被SELinux依据安全策略进行检查。如果安全策略允许操作，则继续，否则将会抛出错误信息给应用程序。SELinux决策的同时还需要Subject和Object的Context信息，确定所属的User、Role和Type等信息，以此查询对应的安全策略进行决策。SELinux同样也使用了AVC机制用于缓存决策结果，以此来提高性能。
+
+## SELinux Context
+
+进程和文件都有属于自己的Context信息，Context分为几个部分，分别是 SELinux User、Role、Type 和一个可选的Level信息。SELinux在运行过程中将使用这些信息查询安全策略进行决策。
+
+- SELinux User：每一个Linux用户都会映射到SELinux用户，每一个SELinux User都会对应相应的Role。
+
+- SELinux Role：每个Role也对应几种SELinux Type，并且充当了User和Type的‘中间人’
+
+- SELinux Type：安全策略使用SELinux Type制定规则，**定义何种Domian（Type）的Subject，可以接入何种Type的Object**。
+
+  ![img](https://pic1.zhimg.com/v2-9189eab21b18b333fb9618eba94b67f0_b.webp?consumer=ZHI_MENG)
+
+显示进程的Context
+
+```
+ps -Z
+```
+
+显示文件的Context信息
+
+```
+ ls -Z
+```
+
+# SELinux 工作流程
+
+![img](https://imgconvert.csdnimg.cn/aHR0cHM6Ly9zMS41MWN0by5jb20vaW1hZ2VzLzIwMTgxMTIyLzE1NDI4ODg2Mjg5NTM3NTQucG5nP3gtb3NzLXByb2Nlc3M9aW1hZ2Uvd2F0ZXJtYXJrLHNpemVfMTYsdGV4dF9RRFV4UTFSUDVZMmE1YTZpLGNvbG9yX0ZGRkZGRix0XzEwMCxnX3NlLHhfMTAseV8xMCxzaGFkb3dfOTAsdHlwZV9abUZ1WjNwb1pXNW5hR1ZwZEdrPQ)

@@ -317,13 +317,68 @@ public:
 };
 ```
 
+
+
+```
+关于this 指针:
+类 class 是对象 object 的模板，所以在创建对象之前需要先定义类，类的定义包含属性（变量）和方法的定义。
+
+类定义好后我们就可以通过类来创建多个实例对象，每个对象都有各自的实例属性（实例变量），但是非内联成员函数（non-inline member function）只会诞生一份函数实例（换句话说每个对象需要共用同一个方法来操作实例属性）。在有多个实例对象访问同一个函数时，函数如何知道该操作哪个对象的属性？此时就需要 this 指针。
+
+编译器会隐式地传递 this 指针，this 指针如同一个句柄，此时方法将根据句柄来确定需要操作哪个对象的属性。调用静态方法时，则不会隐式地传递 this 指针，因为静态函数不与类实例对象相关联，即不属于某个对象拥有而由所有实例对象共享。
+————————————————        
+原文链接：https://blog.csdn.net/jf_52001760/article/details/128533398
+```
+
 **为什么不能在一个常量对象中调用非常成员函数？**
 
 因为在默认情况下，this的类型是指向类的非常量版本的常量指针（意思是this的值不能改变，永远指向那个对象，即“常量指针”，但是被this指向的对象本身是可以改变的，因为是非常量版本，这里this相当于是**顶层const**），而this尽管是隐式的，它仍然需要遵循初始化规则，**普通成员函数的隐式参数之一是一个底层非const指针**，在默认情况下我们无法把一个底层const的this指针转化为非const的this指针，因此我们不能在常量对象上调用普通的成员函数。因此在上例中，形参列表后的const就意味着默认this指针应该是一个底层const, 类型是 const ClassName&。而**非常对象却可以调用常成员函数，因为*底层非const可以默认转化为底层const**。*
 
+## 条款03 总结
+
+1 将某些东西声明为const 可以让编译器帮助检查错误用法，同时规范了函数使用
+
+2 使用概念上的常量性
+
+3 注意处理const 代码和no-const代码的重复性，原则上以no-const函数调用const 函数；
+
 # 条款 04：确定对象被使用前已先被初始化
 
-读取没有明确初始化值的对象会导致不明确的行为，
+注意区分赋值和初始化：
+
+```C++
+class ABE{
+	public ABE(const std::string _name);
+	private:
+		std::string name;
+}
+ABE(const std::string _name) 
+{
+	name =  _name; // 这是赋值
+}
+```
+
+```
+C++规定，对象的成员变量初始化动作发生在进入构造函数之前
+```
+
+对于ABE而言，初始化发生在调用默认构造函数的时候。 首先默认构造函数设置初值，然后立刻再赋新值
+
+使用列表初始化代替赋值：
+
+```
+ABE(const std::string _name)
+: name(_name)
+{
+
+}
+```
+
+```
+规定总是再初始值列表中列出所有的成员变量（未认为设定初始值的会调用默认构造函数）
+```
+
+读取没有明确初始化值的对象会导致不明确的行为
 
 - 对于内置类型的对，永远在使用初始化
 
@@ -349,10 +404,15 @@ public:
 
  static 对象寿命从被构造出来直到程序结束为止， 程序结束时候static对象会被自动销毁。
 
--  	函数内的static对象成为local对象，其他的static对象称为non-local static对象。不同编译单元中的non-local  startic对象初始化次序并不明确
-- ​	 函数内的 local static 对象会在“该函数被调用期间、首次遇上该对象的定义式”时被初始化
+-  函数内的static对象成为local对象，其他的static对象称为non-local static对象。
 
-因此，如果一个 non-local static 对象的初始化依赖于另外一个 non-local static 的初始化，那么可能造成
+-  函数内的 local static 对象会在“该函数被调用期间、首次遇上该对象的定义式”时被初始化
+
+  ```
+  **不同编译单元中的non-local  startic对象初始化次序并不明确**
+  ```
+
+  因此，如果一个 编译单元内的non-local static 对象的初始化依赖于另外一个编译单元内的 non-local static 的初始化，那么可能造成
 
 错误。解决方法是使用 local static 对象替换 non-local static 对象：
 
@@ -364,7 +424,13 @@ FileSystem& tfs()
 }
 ```
 
+## 条款04 总结
 
+1 为内置类型对象进行手工初始化，因为C++ 不保证初始化他们，这依赖于编译器的具体实现
+
+2 构造函数中使用初始化列表构造，不要再狗仔函数本体内使用赋值操作。注意初始化列表的成员变量顺序应该与声明的顺序相同
+
+3 注意non-local static 对象跨编译单元的初始化顺序问题，最佳方法是使用local static 对象代替non-local static 对象
 
 # **条款 05：了解 C++默默编写并调用哪些函数**
 
@@ -384,3 +450,74 @@ FileSystem& tfs()
 • 	**含有** **const** **成员**：const 对象不应该修改
 
 •	 **父类的** **copy assignment** **操作符被声明为** **private**：无法处理基类子对象，因此也就无法合成
+
+```C++
+NOte:
+ 运算符重载的等价调用形式：
+ 
+ MyClass& operator=(const MyClass& other) {
+		// ...
+        return *this;
+    }
+    
+MyClass obj1(10);
+MyClass obj2(20);
+obj1 = obj2 // 等价于obj1.operator=(obj2);
+
+```
+
+
+
+```C++
+复制构造函数是构造函数的一种，也称拷贝构造函数，它只有一个参数，参数类型是本类的引用。
+复制构造函数的参数可以是 const 引用，也可以是非 const 引用。 一般使用前者，这样既能以常量对象（初始化后值不能改变的对象）作为参数，也能以非常量对象作为参数去初始化其他对象。一个类中写两个复制构造函数，一个的参数是 const 引用，另一个的参数是非 const 引用，也是可以的。
+类的设计者不写复制构造函数，编译器就会自动生成复制构造函数。大多数情况下，其作用是实现从源对象到目标对象逐个字节的复制，即使得目标对象的每个成员变量都变得和源对象相等。编译器自动生成的复制构造函数称为“默认复制构造函数”。
+默认构造函数（即无参构造函数）不一定存在，但是复制构造函数总是会存在。
+
+如果编写了复制构造函数，则默认复制构造函数就不存在了。下面是一个非默认复制构造函数的例子。
+#include<iostream>
+using namespace std;
+class Complex{
+public:
+    double real, imag;
+    Complex(double r,double i){
+        real = r; imag = i;
+    }
+    Complex(const Complex & c){
+        real = c.real; imag = c.imag;
+        cout<<"Copy Constructor called"<<endl ;
+    }
+};
+
+int main(){
+    Complex cl(1, 2);
+    Complex c2 (cl);  //调用复制构造函数
+    cout<<c2.real<<","<<c2.imag;
+    return 0;
+}
+
+复制构造函数被调用的三种情况：
+ 1 当用一个对象去初始化同类的另一个对象时，会引发复制构造函数被调用。例如，下面的两条语句都会引发复制构造函数的调用，用以初始化 c2。
+    Complex c2(c1);
+	Complex c2 = c1; //初始化语句，不是赋值语句。赋值语句的等号左边是一个早已有定义的变量，赋值语句不会引发复制构造函数的调用。例如：
+	Complex c1, c2; c1 = c2 ;
+    c1=c2;
+ 2 如果函数 F 的参数是类 A 的对象，那么当 F 被调用时，类 A 的复制构造函数将被调用。换句话说，作为形参的对象，是用复制构造函数初始化的，而且调用复制构造函数时的参数，就是调用函数时所给的实参
+     
+    #include<iostream>
+    using namespace std;
+    class A{
+    public:
+        A(){};
+        A(A & a){
+            cout<<"Copy constructor called"<<endl;
+        }
+    };
+    void Func(A a){ }
+    int main(){
+        A a;
+        Func(a);
+        return 0;
+    }
+```
+

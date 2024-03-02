@@ -8,7 +8,7 @@ int x   //内置类型也是声明式
 
 定义式：提供编译器一些声明式所遗漏的细节
 
-读懂变量声明的黄金法则：
+**读懂变量声明的黄金法则：**
 
 第一步; 找到变量名，如果没有变量名，找到最里面的结构
 
@@ -110,6 +110,28 @@ CALL_WITH_MAX(++a,b + 10); *//a* *被累加* *1* *次*
 
 # 条款 03：尽可能使用 const
 
+**const 修饰指针：**
+
+1 const 出现在* 左边，表示被指示物是常量，
+
+```C++
+const char *p = greeting; // 被指向物是常量，指针是非常量
+```
+
+2 const 出现在 * 右边，表示指针自身是常量，
+
+```c++
+char* const p = greeting; // 常量指针， 非常量被指物品
+```
+
+3 const 出现在* 两边， 表示指针和被指向物都是常量
+
+```C++
+const char * const p = greeting; //常量指针，常量被指物
+```
+
+ **注意：**
+
 对于迭代器：
 
 ```
@@ -134,7 +156,9 @@ const returnType functionName(param list)
 
 **函数后加const**
 
-​	只有类的非静态成员函数后可以加const修饰，表示该类的this指针为const类型，不能改变类的成员变量的值，即成员变量为read only，任何改变成员变量的行为均为非法。此类型的函数可称为只读成员函数，格式为：
+ ==》 只能类中成员函数加，为常量成员函数。常量成员函数意味着在函数体内不能修改类的成员变量（除非它们被声明为 `mutable`）或调用非常量成员函数。
+
+​	***只有类的非静态成员函数后可以加const修饰***，表示该类的this指针为const类型，不能改变类的成员变量的值，即成员变量为read only，任何改变成员变量的行为均为非法。此类型的函数可称为只读成员函数，格式为：
 
 ```C++
 returnType functionName(param list) const
@@ -255,11 +279,17 @@ std::size_t CTextBlock::length() const{
 }
 ```
 
-总的来说，上面提到了 2 种“修改”const 成员函数中修改对象（修改 const 对象）的方法
+总的来说，上面提到了 2 种“修改”const 成员函数中修改对象（修改 const 对象）的方法:
+
+```
+1 使用指针，通过指针修改指向的内容绕过const成员函数不能修改成员函数的限制
+
+2 使用mutable 修饰成员变量
+```
 
 最后，const 和 non-const 版本的函数可能含有重复的代码，如果抽离出来单独成为一个成员函数还是有
 
-重复。如果希望去重，可以使用“**运用** **const** **成员函数实现出其** **non-const** **孪生兄弟**”的技术， 及非const可以重载const函数：
+重复。如果希望去重，可以使用“**运用** **const** **成员函数实现出其** **non-const** **孪生兄弟**”的技术， 即在no-const 函数中调用const 函数：
 
 ```C++
 class CTextBlock {
@@ -276,7 +306,7 @@ public:
 
 	return const_cast<char&>(
 
-	static_cast<const TextBlock&>(*this)
+	static_cast<const TextBlock&>(*this) //注意此处的强制转换，将this 强转成为const 是为了调用const 成员函数，避免了自身循环调用
 
  [pos] 
 
